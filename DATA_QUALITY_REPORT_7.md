@@ -58,25 +58,28 @@ From the `decision_table` (Section 4.5).
 | ts | incomplete days | 5 | dropped from daily table (< 18 h) | a daily mean needs ≥ 18 of 24 hours |
 
 ## 5. Key findings (max 3)
-1. **The season sets the level** — 2.2 → 24.7 °C, median 12.6 °C — evidence: Fig. 5_1 (ECDF) and Fig. 5_2 (monthly profiles of the 3 full-year stations, Aff, Aron, Chênelais) — so what: any model needs a month or season effect.
-2. **Stations differ strongly on the same day** — on 25 June the Vilaine averaged 23.4 °C and the Aff 16.8 °C (6.6 °C gap); the Illet swings ~2.6 °C day/night vs ~1 °C elsewhere — evidence: Fig. 5_3 (station × month heatmap), Section 4.4 triage table — so what: add a station effect; consider daily amplitude per station.
-3. **Station coverage changes with the season** — spring has 7 stations, autumn only 4 — evidence: Section 4.3 heatmap and season table; blank cells in Fig. 5_3 — so what: compare seasons on the full-year stations (as Fig. 5_2 does), never on pooled averages.
+1. **Season is the biggest effect.** The 3 full-year stations (Aff, Aron, Chênelais) share one cycle: coldest in February (6.3–7.4 °C), warmest June–September (16–19 °C), a 9–12 °C swing. The ECDF is one smooth curve from 2.2 to 24.7 °C: that spread is the seasons, not bad values — evidence: Fig. 5.1, 5.2 — so what: any model needs a month or day-of-year term.
+2. **Stations are close in winter, far apart in summer.** On the same days in Jan–Feb the 7 live stations are within 0.9 °C; from 1 Jun to 28 Jul the gap is 5.4 °C (Vilaine 21.0 °C vs Aff 15.7 °C) — evidence: Fig. 5.3 — so what: include a station effect **and** a station × season interaction.
+3. **The stations that drop out after summer are the warm ones.** Couesnon, Flume, Illet and Vilaine stop 29 Jul–25 Aug; in Jun–Jul they average 19.1 °C vs 16.7 °C for the 3 full-year stations — evidence: 4.3 heatmap, blank cells in Fig. 5.3 — so what: compare stations only on dates where all are live; no imputation for autumn.
 
 ## 6. What cannot be trusted ⚠️
-- **All of `resultat`**: every row is `code_qualification = 4` ("Non qualifié"), raw sensor data never validated by the producer.
-- **Pooled autumn statistics**: only Aff, Aron, Chênelais and Semnon cover Sep–Dec, so an "autumn average" describes different rivers than the summer one. This also affects per-station medians over the year (Fig. 5_3 title): stations that stop in summer have no autumn/winter end-of-year values.
-- **Illet at Ercé-près-Liffré, last days before 25 Aug 2023**: day/night swing much larger than usual; possibly a sensor in low water reading partly air.
-- **26 March 2023, 03:00, all 7 stations**: two readings per label and no timezone in the API, so their order and true time are unknown.
-- **Flume (04207400) + Semnon (04212700)**: a replacement, but on two different rivers; never join them into one series.
-- **Generalisation**: one département, one year; do not extend results to other regions or years.
+- **Fig. 5.2 as "the département's seasonal cycle"**: the 3 full-year stations are 2.4 °C cooler in summer than the 4 that stopped, so the département's summer peak is underestimated.
+- **Any yearly average per station (incl. the 2.6 °C in Fig. 5.3's title)**: 4 stations have no autumn and Semnon only Aug–Dec; Semnon and Vilaine look warmest partly because they miss cold months.
+- **The pooled ECDF and its 12.6 °C median (Fig. 5.1)**: the 3 full-year stations are 51 % of the rows, Semnon 7 %, and Jan–Jul outweighs Sep–Dec. It describes our rows, not the typical river.
+- **`resultat`, all 51,425 rows**: `code_qualification = 4` ("Non qualifié"). Our checks catch fast errors only; a slow drift or calibration offset would pass.
+- **Illet at Ercé-près-Liffré, last days before 25 Aug**: day/night swing 3.9 °C vs 2.6 °C usually (others 1.6 °C) — possible low water, unconfirmed.
+- **26 March 2023, 02:00–03:00, 7 stations**: 14 rows share the 03:00 label and 02:00 is missing; probably the clock change, unverifiable (no timezone). 7 hours of ~51k.
+- **Flume (04207400) + Semnon (04212700)**: a replacement on two different rivers; never join them into one series.
+- **Generalisation**: 1 département, 1 year, 8 point sensors; says nothing about other regions, years or trends.
 
 ## 7. Hypotheses for modelling (≥ 5)
-- **H1** — Daily mean temperature is higher in summer (Jun–Aug) than in winter (Dec–Feb) at the 3 full-year stations — one-sided Mann-Whitney U per station.
-- **H2** — Daily mean temperature differs between stations over a common period (1 Jun–29 Jul, 7 stations) — Kruskal-Wallis, then Dunn post-hoc.
-- **H3** — Daily amplitude (max − min) is larger at the Illet than at the other stations in summer — Mann-Whitney U.
-- **H4** — Daily amplitude increases with daily mean temperature, within each station — Spearman correlation (ρ > 0).
-- **H5** — Full-year stations move together: their daily means are strongly correlated (ρ > 0.9) across 2023 — Spearman on paired days.
-- **H6** — The Illet's amplitude in its last 5 days is higher than in the rest of its summer — Mann-Whitney U (tests the MNAR doubt).
+- **H1** — daily `temp_mean` is higher in summer (Jun–Aug) than winter (Dec–Feb) · 3 full-year stations · one-sided Mann-Whitney U per station, on weekly means.
+- **H2** — daily `temp_mean` is higher at Vilaine than at Aff on the same day · 1 Jun–28 Jul 2023 (58 days) · paired Wilcoxon signed-rank.
+- **H3** — the gap between stations is larger in summer than winter (0.9 vs 5.4 °C) · 7 stations live 1 Jan–28 Jul · OLS `temp_mean ~ C(station) * C(season)` on weekly means, F-test on the interaction.
+- **H4** — the daily swing `temp_max − temp_min` is larger in summer than winter (median 1.6 vs 0.9 °C) · stations with both seasons · Kruskal-Wallis across seasons, then Mann-Whitney per station.
+- **H5** — daily `temp_mean` is strongly autocorrelated (lag-1 > 0.9; we see 0.97–1.00) · every station · ACF + Ljung-Box. If it holds, H1–H4 must use weekly blocks or AR errors, or p-values look too good.
+
+**Next steps:** collect 2019–2024 with the same loop (are summer peaks rising?); add air temperature and river flow (Hub'Eau `hydrometrie`); check whether validated 2023 data exists.
 
 ## 8. How to reproduce
 ```bash
