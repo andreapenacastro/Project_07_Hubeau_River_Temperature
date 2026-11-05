@@ -1,0 +1,13 @@
+column,issue,n_rows,decision,why
+geometry_coordinates,GeoJSON coordinate lists,51425,split into longitude/latitude; raw list dropped,array-valued coordinates are not hashable; the numeric columns retain the location
+all,exact duplicate rows,0,dropped,identical on every column: the same measurement returned twice by the API pages
+ts,same station + timestamp more than once,14,flagged; source readings kept,"API timestamps have no timezone offset; the daylight-saving cause is unverified, so readings are not averaged here"
+code_unite,unit other than °C,0,dropped (none found),"checked, not assumed: mixing units would corrupt every average"
+resultat,"temperature outside [0.0, 30.0] °C",0,set to NaN (none found),below 0 °C river water would be ice; above 30 °C is not plausible for Breton rivers
+code_qualification,measurements not validated by the producer ('Non qualifié'),51425,"kept, flagged as a limitation in the report","every row is unvalidated raw sensor data: no producer has checked them, so our own spike checks matter"
+ts,timestamp labels absent vs 24-per-day baseline,18662,not imputed; daily summaries require enough unique labels; covered months checked per station,"counts unique naive labels; the API timezone is unspecified, so the spring clock change may explain a gap"
+resultat,spikes: > 2.0 °C over an eligible 1-hour step or > 5.0 °C from the 7-day median,0,set to NaN (kept in raw data),physically too fast for a river: typical of a sensor out of the water reading air
+ts,spike tests skipped at colliding timestamps,14,not evaluated; readings kept,a collision has no unique timestamp value; source readings remain available
+resultat,largest real deviations below the spike thresholds,115,kept,"gradual changes over hours: real weather events, exactly what the seasonal analysis must see"
+ts,repeated timestamp slots in daily summaries,7,combined within derived summaries; source rows kept,each timestamp label gets equal weight; the timezone cause is still unverified
+ts,different sampling frequencies / incomplete days,5,resampled to one daily summary per station; days with < 18 unique labels dropped,"daily coverage counts unique timestamp labels, not source rows"
